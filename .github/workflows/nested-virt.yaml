@@ -1,22 +1,24 @@
-name: Test Nested Virtualization
+name: Check Nested Virtualization Support
 
 on:
   workflow_dispatch:
 
 jobs:
-  check-nested-virtualization:
+  check-nested-virt:
     runs-on: windows-11-arm
     steps:
-      - name: Check if Hyper-V is installed
-        run: Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All
-
-      - name: Check if nested virtualization is available
+      - name: Check virtualization firmware support (detailed)
         run: |
-          $vmSupport = Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty VirtualizationFirmwareEnabled
-          Write-Host "VirtualizationFirmwareEnabled: $vmSupport"
-
-      - name: Try creating a Hyper-V VM (will fail if no nested virt)
+          Get-ComputerInfo -Property "HyperV*"
+      - name: Check VirtualizationFirmwareEnabled via CIM
         run: |
-          Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
-          New-VMSwitch -SwitchName "TestSwitch" -SwitchType Internal
- 
+          $enabled = Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty VirtualizationFirmwareEnabled
+          Write-Host "VirtualizationFirmwareEnabled (CIM): $enabled"
+      - name: List all Win32_Processor fields via CIM
+        shell: pwsh
+        run: |
+          $cpuInfo = Get-CimInstance -ClassName Win32_Processor
+          foreach ($property in $cpuInfo.PSObject.Properties) {
+            Write-Host "$($property.Name): $($property.Value)"
+          }
+
