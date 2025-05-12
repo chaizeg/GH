@@ -1,0 +1,22 @@
+name: Test Nested Virtualization
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-nested-virtualization:
+    runs-on: windows-11-arm
+    steps:
+      - name: Check if Hyper-V is installed
+        run: Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All
+
+      - name: Check if nested virtualization is available
+        run: |
+          $vmSupport = Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty VirtualizationFirmwareEnabled
+          Write-Host "VirtualizationFirmwareEnabled: $vmSupport"
+
+      - name: Try creating a Hyper-V VM (will fail if no nested virt)
+        run: |
+          Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
+          New-VMSwitch -SwitchName "TestSwitch" -SwitchType Internal
+ 
